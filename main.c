@@ -1,9 +1,6 @@
 #include <stdio.h>
 
-#ifndef CONNECT4_H
 #include "connect4.h"
-#define CONNECT4_H
-#endif
 
 struct board {
 	unsigned long long red;
@@ -88,6 +85,7 @@ int yellow_search(int alpha, int beta) {
 	return best;
 }
 
+#ifndef TESTING
 int main() {
 	init_board();
 	board.red    = 17571840;
@@ -95,3 +93,4 @@ int main() {
 	print_board();
 	return 0;
 }
+#endif
