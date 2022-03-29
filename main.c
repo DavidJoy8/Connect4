@@ -41,6 +41,7 @@ unsigned long long *gen_moves() {
 #define MAX(a,b) (a > b ? a : b)
 #define MIN(a,b) (a < b ? a : b)
 
+int yellow_search(int alpha, int beta);
 int red_search(int alpha, int beta) {
 	int best = NEG_INFINITY;
 	unsigned long long *moves = gen_moves();
