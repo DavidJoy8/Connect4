@@ -43,8 +43,9 @@ int red_search(int alpha, int beta) {
 	int best = NEG_INFINITY;
 	unsigned long long *moves = gen_moves();
 	for (int i=0; i<7; i++) { //check for winning moves
-		if (moves[i] && IS_WIN(board.red | moves[i]))
+		if (moves[i] && IS_WIN(board.red | moves[i])) {
 			return RED_SCORE(board.red | moves[i]);
+		}
 	}
 	for (int i=0; i<7; i++) {
 		if(moves[i]) {
