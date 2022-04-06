@@ -35,63 +35,90 @@ unsigned long long *gen_moves() {
 	return base;
 }
 
+unsigned long long node_hits = 0;
+unsigned long long cache_hits = 0;
+
 #define MAX(a,b) (a > b ? a : b)
 #define MIN(a,b) (a < b ? a : b)
 
-int yellow_search(int alpha, int beta);
-int red_search(int alpha, int beta) {
-	int best = NEG_INFINITY;
-	unsigned long long *moves = gen_moves();
-	for (int i=0; i<7; i++) { //check for winning moves
-		if (moves[i] && IS_WIN(board.red | moves[i])) {
-			return RED_SCORE(board.red | moves[i]);
-		}
+#define CACHE_SIZE 123458ULL
+#define HASH(red, yellow) ((7*red + 13*yellow)%CACHE_SIZE)
+#define SCORE_OFFSET 50
+#define EXACT 1
+#define LOWERBOUND 2
+#define UPPERBOUND 3
+int check_cache(unsigned long long *cache, int *alpha, int *beta) {
+	unsigned long long hash = HASH(board.red, board.yellow);
+	if ((cache[2*hash] & ALL_SQUARES) == board.red && (cache[2*hash + 1] & ALL_SQUARES) == board.yellow) {
+		cache_hits++;
+		int score = NEG_INFINITY + (int)((cache[2*hash] & (63ULL<<SCORE_OFFSET))>>SCORE_OFFSET);
+		int type  = (int)(cache[2*hash + 1] >> SCORE_OFFSET);
+		if (type == LOWERBOUND)
+			*alpha = MAX(*alpha, score);
+		else if (type == UPPERBOUND)
+			*beta = MIN(*beta, score);
+		else if (type == EXACT)
+			*alpha = *beta;
+		return score;
 	}
-	for (int i=0; i<7; i++) {
-		if(moves[i]) {
-			board.red ^= moves[i];
-			best = MAX(best, yellow_search(alpha, beta));
-			if (best >= beta) {	//alphabeta cutoff
-				board.red ^= moves[i];
-				break;
-			}
-			alpha = MAX(alpha, best);
-			board.red ^= moves[i];
-		}
-	}
-	return best;
+	return NEG_INFINITY;
 }
-int yellow_search(int alpha, int beta) {
-	int best = POS_INFINITY;
+void put_cache(unsigned long long *cache, int val, int type) {
+	unsigned long long hash = HASH(board.red, board.yellow);
+	cache[2*hash] = board.red | (((unsigned long long)(val - NEG_INFINITY)) << SCORE_OFFSET);
+	cache[2*hash + 1] = board.yellow | (((unsigned long long)type) << SCORE_OFFSET);
+}
+
+int negamax(int isRed, int alpha, int beta, unsigned long long *cache) {
+	node_hits++;
+	//check for instant wins/draws:
 	unsigned long long *moves = gen_moves();
-	for (int i=0; i<7; i++) { //check for winning moves
-		if (moves[i] && IS_WIN(board.yellow | moves[i])) {
-			return YELLOW_SCORE(board.yellow | moves[i]);
-		}
-	}
-	if (PIECE_COUNT(board.yellow)==20)	//if we don't have a winning move and are placing our 21st piece, it's a full board draw
-		return 0;
+	unsigned long long *curBoard = (isRed ? &board.red : &board.yellow);
 	for (int i=0; i<7; i++) {
-		if(moves[i]) {
-			board.yellow ^= moves[i];
-			best = MIN(best, red_search(alpha, beta));
-			if (best <= alpha) {
-				board.yellow ^= moves[i];
-				break;
-			}
-			beta = MIN(beta, best);
-			board.yellow ^= moves[i];
+		if (moves[i] && IS_WIN(*curBoard | moves[i])) {
+			return SCORE(*curBoard | moves[i]);
 		}
 	}
+	if (!isRed && PIECE_COUNT(*curBoard)==20)	//yellow placing its 21st piece without a winning move means the board is full, and the game is a draw
+		return 0;
+	//If we got here, we need to search, so check the cache:
+	int inputAlpha = alpha;
+	int cacheVal = check_cache(cache, &alpha, &beta);
+	if (cacheVal > NEG_INFINITY && alpha >= beta)
+		return cacheVal;
+	//If we got here, the cache didn't have the exact value, so perform a search:
+	int best = NEG_INFINITY;
+	for (int i=0; i<7; i++) {
+		if (moves[i]) {
+			*curBoard ^= moves[i];
+			best = MAX(best, -negamax(!isRed, -beta, -alpha, cache));
+			*curBoard ^= moves[i];
+			alpha = MAX(alpha, best);
+			if (alpha >= beta)	//alpha-beta cutoff
+				break;
+		}
+	}
+	if (best <= inputAlpha)
+		put_cache(cache, best, UPPERBOUND);
+	else if (best >= beta)
+		//an alpha-beta cuttoff occured (or would have occured if there was another move to examine)
+		//so we know we can get at least this score
+		put_cache(cache, best, LOWERBOUND);
+	else	//nothing special happened and we explored the whole gametree below us
+		put_cache(cache, best, EXACT);
 	return best;
 }
 
 #ifndef TESTING
 int main() {
 	init_board();
-	board.red    = 17571840;
-	board.yellow = 68719480897;
+	board.red    = 23478420589 | AT(38);
+	board.yellow = 217039747986 | AT(35) | AT(39);
 	print_board();
+	unsigned long long cache[2*CACHE_SIZE];
+	printf("%d\n", IS_WIN(board.red | AT(40)));
+	printf("%d\n", IS_WIN(1397867955309));
+	//printf("%d\n", negamax(RED_TURN(board), NEG_INFINITY, POS_INFINITY, cache));
 	return 0;
 }
 #endif

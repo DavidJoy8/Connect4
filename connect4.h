@@ -23,17 +23,14 @@
 #define BOT4 1047153931215ULL
 #define BOT5 2164118124511ULL
 
-#define VERT_WIN(pieces) ((TOP3 & (pieces))>>3 & (TOP4 & (pieces))>>2 & (TOP5 & (pieces))>>1 & (pieces) != 0)
-#define HORI_WIN(pieces) ((pieces)>>18 & (pieces)>>12 & (pieces) >> 6 & (pieces) != 0)
-#define DIAG_A_WIN(pieces) ((TOP3 & (pieces))>>21 & (TOP4 & (pieces))>>14 & (TOP5 & (pieces))>>7 & (pieces) != 0)
-#define DIAG_B_WIN(pieces) ((BOT3 & (pieces))>>15 & (BOT4 & (pieces))>>10 & (BOT5 & (pieces))>>5 & (pieces) != 0)
+#define VERT_WIN(pieces) (((TOP3 & (pieces))>>3 & (TOP4 & (pieces))>>2 & (TOP5 & (pieces))>>1 & (pieces)) != 0)
+#define HORI_WIN(pieces) (((pieces)>>18 & (pieces)>>12 & (pieces) >> 6 & (pieces)) != 0)
+#define DIAG_A_WIN(pieces) (((TOP3 & (pieces))>>21 & (TOP4 & (pieces))>>14 & (TOP5 & (pieces))>>7 & (pieces)) != 0)
+#define DIAG_B_WIN(pieces) (((BOT3 & (pieces))>>15 & (BOT4 & (pieces))>>10 & (BOT5 & (pieces))>>5 & (pieces)) != 0)
 #define IS_WIN(pieces) (VERT_WIN(pieces) || HORI_WIN(pieces) || DIAG_A_WIN(pieces) || DIAG_B_WIN(pieces))
 
-//scoring:
-//If red wins, their score is (22 - number of red pieces).  This encourages the CPU to win quickly and lose slowly.
-//If yellow wins, their score is (number of yellow pieces - 22).  The idea that negative scores represent the second player winning is borrowed from chess
-//These values are used to start the search.  They are outside the range of obtainable scores, which is [-18, 18] (since a win takes a minimum of 4 pieces)
+//Upon winning, your score is 22 minus the number of pieces you placed.  This encourages winning quickly and losing slowly.
+//The infinity values are used to start the search.  They are outside the range of obtainable scores, which is [-18, 18] (since a win takes a minimum of 4 pieces)
 #define NEG_INFINITY -25
 #define POS_INFINITY 25
-#define RED_SCORE(pieces) 22 - __builtin_popcountll(pieces)
-#define YELLOW_SCORE(pieces) __builtin_popcountll(pieces) - 22
+#define SCORE(pieces) 22 - __builtin_popcountll(pieces)

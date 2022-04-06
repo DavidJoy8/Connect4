@@ -16,4 +16,4 @@ with open(argv[1]) as infile:
 				boards[index%2] += (1<<(6*int(move) - 6)) + ((boards[0] | boards[1]) & COL(int(move)))
 				#This uses the fact that the bitboard increases by column (the first column is 1, 2, 4, 8, 16, 32) to calculate the value of the next move
 				#The -6 comes from the movelist being 1-based
-			outfile.write(f"{boards[0]} {boards[1]} {int(result) * (1 if len(moves)%2==0 else -1)}\n")
+			outfile.write(f"{boards[0]} {boards[1]} {result}\n")
